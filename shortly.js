@@ -4,6 +4,7 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var uuid = require('uuid');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -84,11 +85,20 @@ app.get('/signup', function(req,res){
   res.render('signup');
 });
 
+app.get('/logout',function(req,res){
+  res.clearCookie('username');
+  res.clearCookie('sid');
+  res.redirect('/')
+})
+
 app.post('/login',function(req,res){
   util.userExists(req.body.username, function(err, data){
     if (!err){
       var pw = data[0]['password'];
-      if (pw === req.body.password){
+      var salt = data[0]['salt'];
+      var hash = bcrypt.hashSync(req.body.password,salt);
+      console.log(pw);
+      if (hash === pw){
         util.serveCookie(req.body.username, function(err, cookie){
           if (!err){
             res.cookie("username", cookie.username);
@@ -104,17 +114,8 @@ app.post('/login',function(req,res){
     } else {
       res.redirect("/signup");
     }
-  })
-  //Check if User exist
-    //check if password match
-      //redirect to index
-      //serve cookie
-    //else if password doesnt match
-      //redirect to login
-  //else if user dont exist
-    //redirect to signup
-
-})
+  });
+});
 
 app.post('/signup',function(req,res){
   var user = new User({
@@ -130,8 +131,10 @@ app.post('/signup',function(req,res){
     util.serveCookie(username,function(err,cookie){
       res.cookie('username',cookie.username);
       res.cookie('sid',cookie.sid);
-      res.redirect('..')
-    })
+      res.redirect('/');
+    });
+  }).catch(function(err){
+    res.render('dupsignup');
   });
 });
 
