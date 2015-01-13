@@ -39,24 +39,23 @@ app.get('/', function(req, res) {
   var username = req.cookies.username;
   var sid = req.cookies.sid;
 
-  var data = Users.get('jacky');
-  console.log(data);
-  //if User dont exist
-  // util.userExists(username,function(err,data){
-  //   if(err){
-  //     //send to signup
-  //   } else {
-  //     util.inSession(sid,function(err,data){
-  //       if(err){
-  //         //send to index
-  //       } else {
-  //         //send to login
-  //       }
-  //     })
-  //   }
-  // });
-
-
+  if(!username){
+    res.redirect('/login');
+  } else {
+    util.userExists(username,function(err,data){
+      if(!err){
+        util.inSession(sid,function(err,data){
+          if(!err){
+            res.render('index');
+          } else {
+            res.redirect('/login')
+          }
+        })
+      } else {
+        res.redirect('/signup');
+      }
+    });
+  }
 });
 
 app.get('/create', function(req, res) {
@@ -85,6 +84,38 @@ app.get('/signup', function(req,res){
   res.render('signup');
 });
 
+app.post('/login',function(req,res){
+  util.userExists(req.body.username, function(err, data){
+    if (!err){
+      var pw = data[0]['password'];
+      if (pw === req.body.password){
+        util.serveCookie(req.body.username, function(err, cookie){
+          if (!err){
+            res.cookie("username", cookie.username);
+            res.cookie("sid", cookie.sid);
+            res.render("index");
+          } else {
+            res.send(505);
+          }
+        });
+      } else {
+        res.redirect("/login");
+      }
+    } else {
+      res.redirect("/signup");
+    }
+  })
+  //Check if User exist
+    //check if password match
+      //redirect to index
+      //serve cookie
+    //else if password doesnt match
+      //redirect to login
+  //else if user dont exist
+    //redirect to signup
+
+})
+
 app.post('/signup',function(req,res){
   var user = new User({
     username: req.body.username,
@@ -95,21 +126,12 @@ app.post('/signup',function(req,res){
     Users.add(newUser);
     var sid = uuid.v4();
     var username = newUser.get('username');
-    var cookie = new Cookie({
-      sid: sid,
-      username: username
-    });
 
-    cookie.save().then(function(newCookie){
-      Cookies.add(cookie);
-    });
-
-    res.cookie('username', username);
-    res.cookie('sid', sid);
-
-    // res.setHeader('location','/');
-    // res.send(200, newUser);
-    res.redirect('/')
+    util.serveCookie(username,function(err,cookie){
+      res.cookie('username',cookie.username);
+      res.cookie('sid',cookie.sid);
+      res.redirect('..')
+    })
   });
 });
 
@@ -159,25 +181,28 @@ app.post('/links', function(req, res) {
 /************************************************************/
 
 app.get('/*', function(req, res) {
-  new Link({ code: req.params[0] }).fetch().then(function(link) {
-    if (!link) {
-      res.redirect('/');
-    } else {
-      var click = new Click({
-        link_id: link.get('id')
-      });
+  if(req.url !== '/favicon.ico'){
+    //console.log('catch up',req.url)
+    new Link({ code: req.params[0] }).fetch().then(function(link) {
+      if (!link) {
+        res.redirect('/');
+      } else {
+        var click = new Click({
+          link_id: link.get('id')
+        });
 
-      click.save().then(function() {
-        db.knex('urls')
-          .where('code', '=', link.get('code'))
-          .update({
-            visits: link.get('visits') + 1,
-          }).then(function() {
-            return res.redirect(link.get('url'));
-          });
-      });
-    }
-  });
+        click.save().then(function() {
+          db.knex('urls')
+            .where('code', '=', link.get('code'))
+            .update({
+              visits: link.get('visits') + 1,
+            }).then(function() {
+              return res.redirect(link.get('url'));
+            });
+        });
+      }
+    });
+  }
 });
 
 console.log('Shortly is listening on 4568');
