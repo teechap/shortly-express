@@ -47,10 +47,21 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 db.knex.schema.hasTable('users').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('users', function (user) {
-      user.increments('id').primary();
-      user.string('username',255);
+      user.string('username',255).primary();
       user.string('password',255);
       user.timestamps();
+    }).then(function (table) {
+      console.log('Created Table', table);
+    });
+  }
+});
+
+db.knex.schema.hasTable('cookies').then(function(exists) {
+  if (!exists) {
+    db.knex.schema.createTable('cookies', function (cookie) {
+      cookie.string('username',255);
+      cookie.string('sid',255);
+      cookie.timestamps();
     }).then(function (table) {
       console.log('Created Table', table);
     });

@@ -2,6 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
+var uuid = require('uuid');
 
 
 var db = require('./app/config');
@@ -9,6 +11,8 @@ var Users = require('./app/collections/users');
 var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
+var Cookie = require('./app/models/cookie');
+var Cookies = require('./app/collections/cookies');
 var Click = require('./app/models/click');
 var session = require('express-session');
 
@@ -19,6 +23,7 @@ app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
+app.use(cookieParser());
 // Parse forms (signup/login)
 app.use(session({
   secret: 'hack',
@@ -30,11 +35,28 @@ app.use(express.static(__dirname + '/public'));
 
 
 app.get('/', function(req, res) {
-  if(req.session.username){
-    res.render('index');
-  } else {
-    res.redirect('/login');
-  }
+  // console.log(req.cookies);
+  var username = req.cookies.username;
+  var sid = req.cookies.sid;
+
+  var data = Users.get('jacky');
+  console.log(data);
+  //if User dont exist
+  // util.userExists(username,function(err,data){
+  //   if(err){
+  //     //send to signup
+  //   } else {
+  //     util.inSession(sid,function(err,data){
+  //       if(err){
+  //         //send to index
+  //       } else {
+  //         //send to login
+  //       }
+  //     })
+  //   }
+  // });
+
+
 });
 
 app.get('/create', function(req, res) {
@@ -59,6 +81,10 @@ app.get('/login', function(req,res){
   res.render('login');
 });
 
+app.get('/signup', function(req,res){
+  res.render('signup');
+});
+
 app.post('/signup',function(req,res){
   var user = new User({
     username: req.body.username,
@@ -67,8 +93,23 @@ app.post('/signup',function(req,res){
 
   user.save().then(function(newUser) {
     Users.add(newUser);
-    res.setHeader('location','/');
-    res.send(200, newUser);
+    var sid = uuid.v4();
+    var username = newUser.get('username');
+    var cookie = new Cookie({
+      sid: sid,
+      username: username
+    });
+
+    cookie.save().then(function(newCookie){
+      Cookies.add(cookie);
+    });
+
+    res.cookie('username', username);
+    res.cookie('sid', sid);
+
+    // res.setHeader('location','/');
+    // res.send(200, newUser);
+    res.redirect('/')
   });
 });
 
