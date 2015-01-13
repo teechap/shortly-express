@@ -20,30 +20,46 @@ app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 // Parse forms (signup/login)
+app.use(session({
+  secret: 'hack',
+  resave: false,
+  saveUninitialized: true
+}));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/',
-function(req, res) {
-  console.log(req.cookie)
-  res.render('index');
+app.get('/', function(req, res) {
+  if(req.session.username){
+    res.render('index');
+  } else {
+    res.redirect('/login');
+  }
 });
 
-app.get('/create',
-function(req, res) {
-  res.render('index');
+app.get('/create', function(req, res) {
+  if(req.session.username){
+    res.render('index');
+  } else {
+    res.redirect('/login');
+  }
 });
 
-app.get('/links',
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
-  });
+app.get('/links', function(req, res) {
+  if(req.session.username){
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+    });
+  } else {
+    res.redirect('/login');
+  }
 });
 
-app.post('/links',
-function(req, res) {
+app.get('/login', function(req,res){
+  res.render('login');
+});
+
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
