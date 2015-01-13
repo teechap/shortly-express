@@ -63,7 +63,7 @@ describe('', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
-    xbeforeEach(function(done){      // create a user that we can then log-in with
+    beforeEach(function(done){      // create a user that we can then log-in with
       new User({
           'username': 'Phillip',
           'password': 'Phillip'
@@ -100,7 +100,7 @@ describe('', function() {
       });
     });
 
-    xdescribe('Shortening links:', function(){
+    describe('Shortening links:', function(){
 
       var options = {
         'method': 'POST',
@@ -149,7 +149,7 @@ describe('', function() {
 
     }); // 'Shortening links'
 
-    xdescribe('With previously saved urls:', function(){
+    describe('With previously saved urls:', function(){
 
       var link;
 
@@ -254,6 +254,7 @@ describe('', function() {
           .where('username', '=', 'Svnh')
           .then(function(res) {
             if (res[0] && res[0]['username']) {
+              //ask HIR
               var user = res[0]['username'];
             }
             expect(user).to.equal('Svnh');
