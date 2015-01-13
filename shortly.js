@@ -67,6 +67,7 @@ app.post('/signup',function(req,res){
 
   user.save().then(function(newUser) {
     Users.add(newUser);
+    res.setHeader('location','/');
     res.send(200, newUser);
   });
 });

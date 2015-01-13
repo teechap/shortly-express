@@ -254,7 +254,6 @@ describe('', function() {
           .where('username', '=', 'Svnh')
           .then(function(res) {
             if (res[0] && res[0]['username']) {
-              //ask HIR
               var user = res[0]['username'];
             }
             expect(user).to.equal('Svnh');
