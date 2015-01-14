@@ -68,12 +68,25 @@ app.get('/create', function(req, res) {
 });
 
 app.get('/links', function(req, res) {
-  if(req.session.username){
-    Links.reset().fetch().then(function(links) {
-      res.send(200, links.models);
-    });
-  } else {
-    res.redirect('/login');
+  var username = req.cookies.username;
+  var sid = req.cookies.sid;
+
+
+  if(!!username){
+    util.inSession(sid,function(err,cookie){
+      if(!err){
+        console.log(cookie);
+        if(cookie[0].username === username){
+          Links.reset().fetch().then(function(links) {
+            res.send(200, links.models);
+          });
+        } else {
+          res.redirect('/login');
+        }
+      } else {
+        res.redirect('/login');
+      }
+    })
   }
 });
 
@@ -92,29 +105,30 @@ app.get('/logout',function(req,res){
 })
 
 app.post('/login',function(req,res){
-  util.userExists(req.body.username, function(err, data){
-    if (!err){
-      var pw = data[0]['password'];
-      var salt = data[0]['salt'];
-      var hash = bcrypt.hashSync(req.body.password,salt);
-      console.log(pw);
-      if (hash === pw){
-        util.serveCookie(req.body.username, function(err, cookie){
-          if (!err){
-            res.cookie("username", cookie.username);
-            res.cookie("sid", cookie.sid);
-            res.render("index");
+  var username = req.body.username;
+  var password = req.body.password;
+
+  new User({username: username})
+    .fetch()
+    .then(function(user){
+      if(!user){
+        res.redirect('/signup');
+      } else {
+        user.comparePassword(req.body.password,function(match){
+          if(match){
+            util.serveCookie(req.body.username,function(err,cookie){
+              if(!err){
+                res.cookie('username',cookie.username);
+                res.cookie('sid',cookie.sid);
+                res.redirect('/');
+              }
+            });
           } else {
-            res.send(505);
+            res.redirect('/login');
           }
         });
-      } else {
-        res.redirect("/login");
       }
-    } else {
-      res.redirect("/signup");
-    }
-  });
+    })
 });
 
 app.post('/signup',function(req,res){
